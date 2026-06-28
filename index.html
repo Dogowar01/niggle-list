@@ -345,6 +345,9 @@
       transform: translateX(-50%) translateY(100%);
       width: 100%;
       max-width: 480px;
+      max-height: 92dvh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       background: var(--bg-1);
       border: 1px solid var(--line-2);
       border-bottom: none;
@@ -723,6 +726,15 @@ document.addEventListener('keydown', e => {
     if (inp.value.trim()) addBtn.click();
   }
 });
+
+// Lift sheet above keyboard on mobile
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    if (!sheet.classList.contains('open')) return;
+    const gap = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+    sheet.style.bottom = gap > 0 ? gap + 'px' : '';
+  });
+}
 
 render();
 </script>
