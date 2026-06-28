@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Niggle List</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200;0,9..144,300;0,9..144,400;1,9..144,200;1,9..144,300&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#0D0D0B">
+  <meta name="description" content="The small annoyances. Captured fast, cleared when the time is right.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Niggle List">
+  <style>
+    :root {
+      --bg:       #0D0D0B;
+      --bg-1:     #141412;
+      --bg-2:     #1A1A17;
+      --bg-3:     #222220;
+      --line:     rgba(255,255,255,0.07);
+      --line-2:   rgba(255,255,255,0.13);
+      --ink:      #EDE9E4;
+      --ink-2:    rgba(237,233,228,0.5);
+      --ink-3:    rgba(237,233,228,0.22);
+      --accent:   #C9894E;
+      --accent-2: rgba(201,137,78,0.15);
+      --r:        12px;
+      --r-sm:     7px;
+
+      /* age-band border colours — neutral/structural, not urgency */
+      --age-new:    rgba(255,255,255,0.10);
+      --age-mid:    rgba(255,255,255,0.28);
+      --age-old:    rgba(255,255,255,0.60);
+      --age-new-w:  2px;
+      --age-mid-w:  3px;
+      --age-old-w:  4px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ───────────────────────────────── */
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 48px 24px 24px;
+      flex-shrink: 0;
+    }
+
+    .wordmark {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 200;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .wordmark em {
+      font-style: italic;
+      color: var(--ink-2);
+    }
+
+    .tally {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--ink-3);
+      font-family: ui-monospace, 'SF Mono', monospace;
+      letter-spacing: 0.01em;
+      min-height: 18px;
+      transition: color 0.4s;
+    }
+    .tally.has-data { color: var(--ink-2); }
+
+    /* ── Time filter ──────────────────────────── */
+    #filter-bar {
+      padding: 0 24px 20px;
+      flex-shrink: 0;
+    }
+
+    .filter-label {
+      font-size: 11px;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      flex: 1;
+      height: 38px;
+      border: 1px solid var(--line-2);
+      border-radius: var(--r-sm);
+      background: var(--bg-1);
+      color: var(--ink-2);
+      font-size: 13px;
+      font-family: ui-monospace, 'SF Mono', monospace;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .filter-btn:hover { background: var(--bg-2); color: var(--ink); }
+    .filter-btn.active {
+      background: var(--accent-2);
+      border-color: var(--accent);
+      color: var(--ink);
+    }
+    .filter-btn.all-btn {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 12px;
+      color: var(--ink-3);
+    }
+    .filter-btn.all-btn.active { color: var(--ink); }
+
+    /* ── List ─────────────────────────────────── */
+    #list-area {
+      flex: 1;
+      padding: 0 24px;
+      overflow-y: auto;
+    }
+
+    .empty-state {
+      padding: 60px 0 0;
+      color: var(--ink-3);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .empty-state p + p { margin-top: 6px; }
+
+    .niggle-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+      border-left: var(--age-new-w) solid var(--age-new);
+      padding-left: 12px;
+      margin-left: -12px;
+      transition: opacity 0.5s, max-height 0.4s ease, padding 0.4s ease, border-bottom-color 0.4s;
+      overflow: hidden;
+      max-height: 200px;
+    }
+    .niggle-row.age-mid {
+      border-left-width: var(--age-mid-w);
+      border-left-color: var(--age-mid);
+    }
+    .niggle-row.age-old {
+      border-left-width: var(--age-old-w);
+      border-left-color: var(--age-old);
+    }
+    .niggle-row.collapsing {
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-bottom-color: transparent;
+      margin-bottom: 0;
+    }
+
+    .check-btn {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border: 1.5px solid var(--line-2);
+      border-radius: 50%;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+      transition: border-color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .check-btn:hover { border-color: var(--ink-2); }
+    .check-btn.checked {
+      background: var(--ink-3);
+      border-color: var(--ink-3);
+    }
+    .check-btn svg { opacity: 0; transition: opacity 0.1s; }
+    .check-btn.checked svg { opacity: 1; }
+
+    .niggle-body { flex: 1; min-width: 0; }
+
+    .niggle-text {
+      font-size: 15px;
+      color: var(--ink);
+      line-height: 1.45;
+      word-break: break-word;
+      transition: color 0.3s, text-decoration-color 0.3s;
+      text-decoration: none;
+    }
+    .niggle-text.struck {
+      text-decoration: line-through;
+      text-decoration-color: var(--ink-2);
+      color: var(--ink-3);
+    }
+
+    .niggle-meta {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .meta-chip {
+      font-family: ui-monospace, 'SF Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-3);
+      background: var(--bg-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 6px;
+    }
+
+    /* ── Capture sheet ────────────────────────── */
+    #fab {
+      position: fixed;
+      bottom: 28px;
+      right: 24px;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--bg-2);
+      border: 1px solid var(--line-2);
+      color: var(--ink);
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.4);
+      transition: background 0.15s, transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      z-index: 10;
+    }
+    #fab:hover { background: var(--bg-3); transform: scale(1.04); }
+    #fab:active { transform: scale(0.97); }
+
+    #sheet-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 20;
+      backdrop-filter: blur(2px);
+    }
+    #sheet-overlay.open { display: block; }
+
+    #capture-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      background: var(--bg-1);
+      border: 1px solid var(--line-2);
+      border-bottom: none;
+      border-radius: var(--r) var(--r) 0 0;
+      padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+      z-index: 30;
+      transform: translateY(110%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    #capture-sheet.open { transform: translateY(0); }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--line-2);
+      margin: 0 auto 20px;
+    }
+
+    .sheet-title {
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 300;
+      font-size: 18px;
+      color: var(--ink);
+      margin-bottom: 16px;
+    }
+
+    #niggle-input {
+      width: 100%;
+      background: var(--bg-2);
+      border: 1px solid var(--line-2);
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+      color: var(--ink);
+      font-size: 15px;
+      font-family: inherit;
+      line-height: 1.5;
+      resize: none;
+      min-height: 72px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #niggle-input:focus { border-color: rgba(255,255,255,0.22); }
+    #niggle-input::placeholder { color: var(--ink-3); }
+
+    .sheet-section-label {
+      font-size: 11px;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin: 16px 0 8px;
+    }
+
+    .time-row, .room-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .time-btn {
+      flex: 1;
+      min-width: 60px;
+      height: 36px;
+      border: 1px solid var(--line-2);
+      border-radius: var(--r-sm);
+      background: var(--bg-2);
+      color: var(--ink-2);
+      font-family: ui-monospace, 'SF Mono', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .time-btn:hover { background: var(--bg-3); color: var(--ink); }
+    .time-btn.selected {
+      background: var(--accent-2);
+      border-color: var(--accent);
+      color: var(--ink);
+    }
+
+    .room-input {
+      flex: 1;
+      height: 36px;
+      background: var(--bg-2);
+      border: 1px solid var(--line-2);
+      border-radius: var(--r-sm);
+      padding: 0 12px;
+      color: var(--ink);
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .room-input:focus { border-color: rgba(255,255,255,0.22); }
+    .room-input::placeholder { color: var(--ink-3); }
+
+    #add-btn {
+      margin-top: 20px;
+      width: 100%;
+      height: 44px;
+      background: var(--bg-3);
+      border: 1px solid var(--line-2);
+      border-radius: var(--r-sm);
+      color: var(--ink);
+      font-size: 15px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #add-btn:hover { background: rgba(255,255,255,0.08); }
+    #add-btn:disabled { opacity: 0.35; cursor: default; }
+
+    /* ── No-filter empty under active filter ── */
+    .filter-empty {
+      padding: 40px 0 0;
+      color: var(--ink-3);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="wordmark">The <em>Niggle</em> List</div>
+    <div class="tally" id="tally"></div>
+  </header>
+
+  <div id="filter-bar">
+    <div class="filter-label">I've got</div>
+    <div class="filter-row">
+      <button class="filter-btn all-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="5">5 min</button>
+      <button class="filter-btn" data-filter="15">15 min</button>
+      <button class="filter-btn" data-filter="30">30 min</button>
+      <button class="filter-btn" data-filter="60">60+ min</button>
+    </div>
+  </div>
+
+  <div id="list-area"></div>
+</div>
+
+<!-- FAB -->
+<button id="fab" aria-label="Add niggle">+</button>
+
+<!-- Sheet overlay -->
+<div id="sheet-overlay"></div>
+
+<!-- Capture sheet -->
+<div id="capture-sheet" role="dialog" aria-modal="true" aria-label="Add a niggle">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">What's the niggle?</div>
+
+  <textarea id="niggle-input" placeholder="Squeaky hinge, loose tile, flickering bulb…" rows="3" maxlength="300"></textarea>
+
+  <div class="sheet-section-label">Time needed</div>
+  <div class="time-row">
+    <button class="time-btn" data-time="5">5 min</button>
+    <button class="time-btn" data-time="15">15 min</button>
+    <button class="time-btn" data-time="30">30 min</button>
+    <button class="time-btn" data-time="60">60+ min</button>
+  </div>
+
+  <div class="sheet-section-label">Room / area <span style="color:var(--ink-3); font-size:10px; text-transform:none; letter-spacing:0;">(optional)</span></div>
+  <div class="room-row">
+    <input type="text" class="room-input" id="room-input" placeholder="Kitchen, garage, bedroom…" maxlength="60">
+  </div>
+
+  <button id="add-btn" disabled>Add niggle</button>
+</div>
+
+<script>
+  // ── Storage ───────────────────────────────────
+  const STORE_KEY = 'niggle_list_v1';
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function save(niggles) {
+    localStorage.setItem(STORE_KEY, JSON.stringify(niggles));
+  }
+
+  // ── State ─────────────────────────────────────
+  let niggles = load();
+  let activeFilter = 'all';
+  let selectedTime = null;
+
+  // ── Elements ──────────────────────────────────
+  const listArea      = document.getElementById('list-area');
+  const tallyEl       = document.getElementById('tally');
+  const filterBtns    = document.querySelectorAll('.filter-btn');
+  const fab           = document.getElementById('fab');
+  const overlay       = document.getElementById('sheet-overlay');
+  const sheet         = document.getElementById('capture-sheet');
+  const niggInput     = document.getElementById('niggle-input');
+  const timeBtns      = document.querySelectorAll('.time-btn');
+  const roomInput     = document.getElementById('room-input');
+  const addBtn        = document.getElementById('add-btn');
+
+  // ── Helpers ───────────────────────────────────
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function ageClass(createdAt) {
+    const days = (Date.now() - createdAt) / 86400000;
+    if (days >= 28) return 'age-old';
+    if (days >= 7)  return 'age-mid';
+    return '';
+  }
+
+  function monthKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()}`;
+  }
+
+  function tally() {
+    const mk = monthKey();
+    const done = niggles.filter(n => n.completedAt && monthKey_(n.completedAt) === mk);
+    const count = done.length;
+    if (count === 0) { tallyEl.textContent = ''; tallyEl.classList.remove('has-data'); return; }
+    const mins = done.reduce((s, n) => s + (n.estimateMinutes || 0), 0);
+    tallyEl.textContent = `${count} cleared this month — about ${mins} minutes reclaimed.`;
+    tallyEl.classList.add('has-data');
+  }
+
+  function monthKey_(ts) {
+    const d = new Date(ts);
+    return `${d.getFullYear()}-${d.getMonth()}`;
+  }
+
+  function timeLabel(m) {
+    if (!m) return null;
+    return m >= 60 ? '60+ min' : `${m} min`;
+  }
+
+  // ── Render ────────────────────────────────────
+  function render() {
+    tally();
+    const pending = niggles.filter(n => !n.completedAt);
+
+    let filtered;
+    if (activeFilter === 'all') {
+      filtered = pending;
+    } else {
+      const t = parseInt(activeFilter);
+      filtered = pending.filter(n => n.estimateMinutes === t);
+    }
+
+    // Sort oldest first
+    filtered = filtered.slice().sort((a, b) => a.createdAt - b.createdAt);
+
+    listArea.innerHTML = '';
+
+    if (pending.length === 0) {
+      const el = document.createElement('div');
+      el.className = 'empty-state';
+      el.innerHTML = '<p>No niggles yet.</p><p>Tap + to capture one.</p>';
+      listArea.appendChild(el);
+      return;
+    }
+
+    if (filtered.length === 0) {
+      const el = document.createElement('div');
+      el.className = 'filter-empty';
+      el.textContent = 'No niggles fit that time window right now.';
+      listArea.appendChild(el);
+      return;
+    }
+
+    filtered.forEach(n => {
+      const row = document.createElement('div');
+      row.className = 'niggle-row ' + ageClass(n.createdAt);
+      row.dataset.id = n.id;
+
+      const checkBtn = document.createElement('button');
+      checkBtn.className = 'check-btn';
+      checkBtn.setAttribute('aria-label', 'Mark complete');
+      checkBtn.innerHTML = `<svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+        <path d="M1 4L4.5 7.5L11 1" stroke="${getComputedStyle(document.documentElement).getPropertyValue('--ink').trim()}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+
+      const body = document.createElement('div');
+      body.className = 'niggle-body';
+
+      const text = document.createElement('div');
+      text.className = 'niggle-text';
+      text.textContent = n.text;
+
+      const meta = document.createElement('div');
+      meta.className = 'niggle-meta';
+
+      if (n.estimateMinutes) {
+        const chip = document.createElement('span');
+        chip.className = 'meta-chip';
+        chip.textContent = timeLabel(n.estimateMinutes);
+        meta.appendChild(chip);
+      }
+      if (n.room) {
+        const chip = document.createElement('span');
+        chip.className = 'meta-chip';
+        chip.textContent = n.room;
+        meta.appendChild(chip);
+      }
+
+      body.appendChild(text);
+      body.appendChild(meta);
+      row.appendChild(checkBtn);
+      row.appendChild(body);
+      listArea.appendChild(row);
+
+      checkBtn.addEventListener('click', () => complete(n.id, row, text));
+    });
+
+    // bottom padding for FAB
+    const pad = document.createElement('div');
+    pad.style.height = '100px';
+    listArea.appendChild(pad);
+  }
+
+  // ── Complete ──────────────────────────────────
+  function complete(id, row, textEl) {
+    const checkBtn = row.querySelector('.check-btn');
+    if (checkBtn.classList.contains('checked')) return;
+
+    // 1. Check fills immediately
+    checkBtn.classList.add('checked');
+
+    // 2. Strikethrough text immediately
+    textEl.classList.add('struck');
+
+    // 3. Deliberate pause before collapsing (~500ms)
+    setTimeout(() => {
+      row.classList.add('collapsing');
+
+      row.addEventListener('transitionend', () => {
+        // Mark complete in data
+        const idx = niggles.findIndex(n => n.id === id);
+        if (idx !== -1) {
+          niggles[idx].completedAt = Date.now();
+          save(niggles);
+        }
+        // Tally updates in place; row already gone
+        tally();
+        row.remove();
+      }, { once: true });
+    }, 500);
+  }
+
+  // ── Filter ────────────────────────────────────
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      render();
+    });
+  });
+
+  // ── Sheet ─────────────────────────────────────
+  function openSheet() {
+    overlay.classList.add('open');
+    sheet.classList.add('open');
+    setTimeout(() => niggInput.focus(), 320);
+  }
+
+  function closeSheet() {
+    sheet.classList.remove('open');
+    overlay.classList.remove('open');
+    resetSheet();
+  }
+
+  function resetSheet() {
+    niggInput.value = '';
+    roomInput.value = '';
+    selectedTime = null;
+    timeBtns.forEach(b => b.classList.remove('selected'));
+    addBtn.disabled = true;
+  }
+
+  fab.addEventListener('click', openSheet);
+  overlay.addEventListener('click', closeSheet);
+
+  niggInput.addEventListener('input', () => {
+    addBtn.disabled = niggInput.value.trim().length === 0;
+  });
+
+  timeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      timeBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedTime = parseInt(btn.dataset.time);
+    });
+  });
+
+  addBtn.addEventListener('click', () => {
+    const text = niggInput.value.trim();
+    if (!text) return;
+
+    const niggle = {
+      id: uid(),
+      text,
+      estimateMinutes: selectedTime,
+      room: roomInput.value.trim() || null,
+      createdAt: Date.now(),
+      completedAt: null,
+    };
+
+    niggles.push(niggle);
+    save(niggles);
+    closeSheet();
+    render();
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && sheet.classList.contains('open')) closeSheet();
+    if (e.key === 'Enter' && e.metaKey && sheet.classList.contains('open') && !addBtn.disabled) addBtn.click();
+  });
+
+  // ── Init ──────────────────────────────────────
+  render();
+</script>
+</body>
+</html>
