@@ -12,17 +12,17 @@
   <meta name="apple-mobile-web-app-title" content="Niggle List">
   <style>
     :root {
-      --bg:          #0A0810;
-      --glass:       rgba(10,7,18,0.65);
-      --glass-2:     rgba(14,10,24,0.75);
-      --glass-sheet: rgba(10,7,20,0.88);
-      --line:        rgba(255,245,255,0.06);
-      --line-2:      rgba(255,245,255,0.11);
-      --line-3:      rgba(255,245,255,0.19);
-      --ink:         #EDE8F2;
-      --ink-2:       rgba(237,232,242,0.56);
-      --ink-3:       rgba(237,232,242,0.28);
-      --ink-4:       rgba(237,232,242,0.12);
+      --bg:          #1A1428;
+      --glass:       rgba(32,22,52,0.55);
+      --glass-2:     rgba(38,28,60,0.65);
+      --glass-sheet: rgba(24,18,40,0.92);
+      --line:        rgba(255,245,255,0.09);
+      --line-2:      rgba(255,245,255,0.15);
+      --line-3:      rgba(255,245,255,0.24);
+      --ink:         #F2EEF8;
+      --ink-2:       rgba(242,238,248,0.70);
+      --ink-3:       rgba(242,238,248,0.42);
+      --ink-4:       rgba(242,238,248,0.20);
 
       /* ── Plum palette ── */
       --plum:        #9552C8;
@@ -44,9 +44,13 @@
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { height: 100%; }
+    html {
+      height: 100%;
+      background: #1A1428;
+    }
     body {
       min-height: 100%;
+      background: #1A1428;
       color: var(--ink);
       font-family: system-ui, -apple-system, 'Helvetica Neue', sans-serif;
       font-size: 15px;
@@ -67,7 +71,7 @@
       inset: 0;
       z-index: 1;
       background:
-        linear-gradient(160deg, rgba(20,8,36,0.82) 0%, rgba(8,5,16,0.72) 100%);
+        linear-gradient(160deg, rgba(30,18,52,0.58) 0%, rgba(15,10,28,0.48) 100%);
     }
 
     /* ══ APP SHELL ═══════════════════════════ */
@@ -126,7 +130,7 @@
       display: flex;
       gap: 4px;
       margin-bottom: 20px;
-      background: rgba(255,245,255,0.04);
+      background: rgba(255,245,255,0.06);
       border: 1px solid var(--line-2);
       border-radius: var(--r-sm);
       padding: 4px;
@@ -852,9 +856,10 @@ function render() {
 
 function renderActive() {
   const pending = niggles.filter(n => !n.completedAt);
+  const t = parseInt(timeFilter);
   let shown = timeFilter === 'all'
     ? pending
-    : pending.filter(n => n.estimateMinutes === parseInt(timeFilter));
+    : pending.filter(n => !n.estimateMinutes || n.estimateMinutes <= t);
   if (roomFilter !== 'all') shown = shown.filter(n => n.room === roomFilter);
   shown = shown.slice().sort((a, b) => a.createdAt - b.createdAt);
 
